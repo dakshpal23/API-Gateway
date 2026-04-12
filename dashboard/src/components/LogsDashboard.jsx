@@ -259,7 +259,7 @@ export default function LogsDashboard() {
                     </span>
 
                     {/* URL */}
-                    <span className="font-mono text-xs text-gray-300 truncate" title={log.url}>
+                    <span className="font-mono text-xs text-gray-300 truncate" title={`${BASE_URL}${log.url.startsWith('/') ? '' : '/'}${log.url}`}>
                       {log.url}
                     </span>
 

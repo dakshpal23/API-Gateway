@@ -15,7 +15,7 @@ const createLimiter = (maxRequests) => {
     standardHeaders: true,
     legacyHeaders: false,
     message: {
-      error: "Too many requests",
+      error: "🚦 Rate limit exceeded. Try again in few seconds.",
     },
   });
 };

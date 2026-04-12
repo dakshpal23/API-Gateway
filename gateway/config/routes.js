@@ -5,6 +5,6 @@ export const routes = {
   },
   '/order': {
     target: 'http://localhost:3002',
-    protected: false,    // requires valid JWT
+    protected: true,    // requires valid JWT
   },
 }

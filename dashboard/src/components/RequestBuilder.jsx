@@ -137,14 +137,19 @@ export default function RequestBuilder({ token }) {
             <option key={m} value={m} style={{ color: 'white', background: '#1a1f2e' }}>{m}</option>
           ))}
         </select>
-        <input
-          id="req-endpoint"
-          type="text"
-          value={endpoint}
-          onChange={e => setEndpoint(e.target.value)}
-          placeholder="/auth/login"
-          className="input-field font-mono text-sm flex-1"
-        />
+        <div className="flex bg-gray-800/60 border border-gray-700/50 rounded-lg overflow-hidden flex-1 focus-within:border-cyan-500/60 transition-all duration-200">
+          <div className="px-3 py-2 text-sm font-mono text-gray-500 bg-gray-900/40 border-r border-gray-700/50 flex items-center select-none whitespace-nowrap">
+            {BASE_URL}
+          </div>
+          <input
+            id="req-endpoint"
+            type="text"
+            value={endpoint}
+            onChange={e => setEndpoint(e.target.value)}
+            placeholder="/auth/login"
+            className="bg-transparent border-none focus:outline-none w-full px-3 py-2 font-mono text-sm text-gray-200"
+          />
+        </div>
         <button
           id="btn-send"
           onClick={sendRequest}
