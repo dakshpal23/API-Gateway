@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { ToastProvider } from './ToastContext';
 import Sidebar from './components/Sidebar';
 import RequestBuilder from './components/RequestBuilder';
