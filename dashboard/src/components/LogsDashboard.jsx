@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import {  AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { getMethodColor, getStatusBg, getServiceFromUrl, formatTimestamp } from '../utils';
 import { useToast } from '../ToastContext';

@@ -13,11 +13,12 @@ const PRESETS = [
   { label: 'Health', method: 'GET', path: '/logs', body: '' },
 ];
 
-export default function RequestBuilder({ token }) {
-  const [method, setMethod] = useState('GET');
-  const [endpoint, setEndpoint] = useState('/order/orders');
-  const [body, setBody] = useState('');
-  const [response, setResponse] = useState(null);
+export default function RequestBuilder({ token, state, setState }) {
+  const { method, endpoint, body, response } = state;
+  const setMethod = (m) => setState(prev => ({ ...prev, method: typeof m === 'function' ? m(prev.method) : m }));
+  const setEndpoint = (e) => setState(prev => ({ ...prev, endpoint: typeof e === 'function' ? e(prev.endpoint) : e }));
+  const setBody = (b) => setState(prev => ({ ...prev, body: typeof b === 'function' ? b(prev.body) : b }));
+  const setResponse = (r) => setState(prev => ({ ...prev, response: typeof r === 'function' ? r(prev.response) : r }));
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
 

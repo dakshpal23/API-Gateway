@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ToastProvider } from './ToastContext';
 import Sidebar from './components/Sidebar';
 import RequestBuilder from './components/RequestBuilder';
@@ -17,6 +17,12 @@ const VIEW_META = {
 function AppContent() {
   const [activeView, setActiveView] = useState('builder');
   const [token, setToken] = useState(null);
+  const [builderState, setBuilderState] = useState({
+    method: 'GET',
+    endpoint: '/order/orders',
+    body: '',
+    response: null
+  });
 
   const handleLogin = (jwt) => {
     setToken(jwt);
@@ -74,7 +80,7 @@ function AppContent() {
               transition={{ duration: 0.25, ease: 'easeOut' }}
               className="h-full glass-panel p-6 overflow-hidden flex flex-col"
             >
-              {activeView === 'builder' && <RequestBuilder token={token} />}
+              {activeView === 'builder' && <RequestBuilder token={token} state={builderState} setState={setBuilderState} />}
               {activeView === 'logs'    && <LogsDashboard />}
               {activeView === 'stats'   && <StatsPanel />}
               {activeView === 'auth'    && <AuthPanel onLogin={handleLogin} />}

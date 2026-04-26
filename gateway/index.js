@@ -75,40 +75,69 @@ const getAuthService = () => {
 // 🔥 AUTH CIRCUIT BREAKER
 // ==========================
 
-const authProxy = (req, res, next) => {
+const bufferRequest = (req) => new Promise((resolve, reject) => {
+  const chunks = [];
+  req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+  req.on('end', () => resolve(Buffer.concat(chunks)));
+  req.on('error', reject);
+});
+
+const authProxy = async (req, res, next) => {
   const target = getAuthService();
+  console.log("🔀 Auth proxy target selected:", target, req.method, req.originalUrl);
 
-  return new Promise((resolve, reject) => {
-    const proxy = createProxyMiddleware({
-      target,
-      changeOrigin: true,
+  const authPath = req.originalUrl.replace(/^\/auth/, '') || '/';
+  const url = new URL(authPath, target);
+  const headers = { ...req.headers };
+  delete headers.host;
 
-      onError: (err) => {
-        console.log("❌ Proxy failed:", target);
-        reject(err);
-      },
+  const body = ['GET', 'HEAD'].includes(req.method)
+    ? undefined
+    : await bufferRequest(req);
 
-      onProxyRes: (proxyRes) => {
-        if (proxyRes.statusCode >= 500) {
-          reject(new Error("Server error")); // 🔥 treat as failure
-        } else {
-          resolve();
-        }
-      },
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const upstream = await fetch(url.toString(), {
+      method: req.method,
+      headers,
+      body: body && body.length ? body : undefined,
+      signal: controller.signal,
     });
 
-    proxy(req, res, next);
-  });
+    upstream.headers.forEach((value, name) => {
+      if (name.toLowerCase() !== 'transfer-encoding') {
+        res.setHeader(name, value);
+      }
+    });
+
+    res.status(upstream.status);
+    const responseBody = Buffer.from(await upstream.arrayBuffer());
+    res.send(responseBody);
+
+    if (upstream.status >= 500) {
+      throw new Error('Server error');
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Auth backend timeout');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
-const authBreaker = new CircuitBreaker((req) => {
-  return getAuthService(); // sirf target decide karega
-}, {
+const authBreaker = new CircuitBreaker(authProxy, {
   timeout: 3000,
   errorThresholdPercentage: 50,
+  volumeThreshold: 1,
   resetTimeout: 10000,
 });
 
+authBreaker.on("failure", (result) => console.log("🧪 Circuit failure detected", result));
+authBreaker.on("reject", (err) => console.log("🚫 Circuit request rejected", err?.message || err));
 authBreaker.on("open", () => console.log("🔥 Circuit OPEN"));
 authBreaker.on("halfOpen", () => console.log("⚠️ HALF OPEN"));
 authBreaker.on("close", () => console.log("✅ Circuit CLOSED"));
@@ -118,15 +147,10 @@ authBreaker.on("close", () => console.log("✅ Circuit CLOSED"));
 // ==========================
 
 app.use("/auth", (req, res, next) => {
-  authBreaker.fire(req)
-    .then((target) => {
-      createProxyMiddleware({
-        target,
-        changeOrigin: true,
-      })(req, res, next);
-    })
-    .catch(() => {
+  authBreaker.fire(req, res, next)
+    .catch((err) => {
       if (!res.headersSent) {
+        console.error("Auth circuit breaker rejected request:", err?.message || err);
         res.status(503).json({
           error: "Auth service temporarily unavailable",
         });
